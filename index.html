@@ -27,76 +27,120 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden; /* Lock scrolling */
     }
 
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      min-height: 100vh;
-      padding: 24px 16px 40px;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
       align-items: center;
     }
 
     header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 4px;
       width: 100%;
-      max-width: 480px;
+      max-width: 420px;
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.25rem;
       font-weight: 700;
       letter-spacing: -0.5px;
     }
 
     .subtitle {
-      font-size: 0.85rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
-      margin-top: 4px;
     }
 
     .tracker-list {
       width: 100%;
-      max-width: 480px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 6px;
+      flex: 1;
+      justify-content: center;
     }
 
     .card {
       background-color: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
     .prayer-info {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      gap: 10px;
     }
 
     .prayer-name {
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       font-weight: 600;
+      width: 58px;
+    }
+
+    .prayer-counts {
+      display: flex;
+      flex-direction: column;
     }
 
     .prayer-remaining {
-      font-size: 1rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: var(--accent);
     }
 
     .prayer-completed {
-      font-size: 0.75rem;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-undo-icon {
+      background-color: rgba(245, 158, 11, 0.12);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 7px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+
+    .btn-undo-icon:active {
+      transform: scale(0.9);
+      background-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-undo-icon:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      border-color: transparent;
+      background-color: transparent;
       color: var(--text-muted);
     }
 
@@ -104,9 +148,9 @@
       background-color: var(--accent);
       color: #ffffff;
       border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 0.95rem;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
       transition: transform 0.1s ease, background-color 0.15s ease;
@@ -118,35 +162,24 @@
     }
 
     .actions {
-      margin-top: 24px;
+      margin-top: 6px;
       width: 100%;
-      max-width: 480px;
+      max-width: 420px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
     }
 
     .btn-secondary {
       background-color: var(--card-bg);
       color: var(--text-muted);
       border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 0.85rem;
+      border-radius: 8px;
+      padding: 8px 2px;
+      font-size: 0.72rem;
       font-weight: 500;
       cursor: pointer;
       text-align: center;
-      transition: opacity 0.2s ease;
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .btn-undo {
-      color: var(--warning);
-      border-color: #78350f;
     }
 
     .btn-danger {
@@ -163,7 +196,7 @@
 
   <header>
     <h1>Qadha Tracker</h1>
-    <p class="subtitle">Saved locally on your device</p>
+    <p class="subtitle">Saved locally on device</p>
   </header>
 
   <div class="tracker-list" id="trackerList">
@@ -171,9 +204,8 @@
   </div>
 
   <div class="actions">
-    <button class="btn-secondary btn-undo" id="undoBtn" onclick="undoLast()" disabled>Undo Last</button>
-    <button class="btn-secondary" onclick="exportData()">Export Backup</button>
-    <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">Import Backup</button>
+    <button class="btn-secondary" onclick="exportData()">Export</button>
+    <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">Import</button>
     <button class="btn-secondary btn-danger" onclick="resetData()">Reset</button>
     <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
   </div>
@@ -189,7 +221,6 @@
     ];
 
     let prayers = [];
-    let history = [];
 
     function loadData() {
       const saved = localStorage.getItem("qadha_data");
@@ -202,43 +233,29 @@
       } else {
         prayers = JSON.parse(JSON.stringify(initialPrayers));
       }
-
-      const savedHistory = localStorage.getItem("qadha_history");
-      if (savedHistory) {
-        try {
-          history = JSON.parse(savedHistory);
-        } catch (e) {
-          history = [];
-        }
-      }
-
       render();
     }
 
     function saveData() {
       localStorage.setItem("qadha_data", JSON.stringify(prayers));
-      localStorage.setItem("qadha_history", JSON.stringify(history));
     }
 
     function logPrayer(index) {
       if (prayers[index].remaining > 0) {
         prayers[index].remaining -= 1;
         prayers[index].completed += 1;
-        history.push(index);
         saveData();
         render();
       }
     }
 
-    function undoLast() {
-      if (history.length === 0) return;
-      const lastIndex = history.pop();
-      prayers[lastIndex].remaining += 1;
-      if (prayers[lastIndex].completed > 0) {
-        prayers[lastIndex].completed -= 1;
+    function undoPrayer(index) {
+      if (prayers[index].completed > 0) {
+        prayers[index].remaining += 1;
+        prayers[index].completed -= 1;
+        saveData();
+        render();
       }
-      saveData();
-      render();
     }
 
     function render() {
@@ -251,22 +268,23 @@
         card.innerHTML = `
           <div class="prayer-info">
             <div class="prayer-name">${prayer.name}</div>
-            <div class="prayer-remaining">${prayer.remaining.toLocaleString()} left</div>
-            <div class="prayer-completed">${prayer.completed.toLocaleString()} completed</div>
+            <div class="prayer-counts">
+              <span class="prayer-remaining">${prayer.remaining.toLocaleString()} left</span>
+              <span class="prayer-completed">${prayer.completed.toLocaleString()} completed</span>
+            </div>
           </div>
-          <button class="btn-done" onclick="logPrayer(${index})">+1 Done</button>
+          <div class="card-actions">
+            <button class="btn-undo-icon" onclick="undoPrayer(${index})" ${prayer.completed === 0 ? 'disabled' : ''} title="Undo ${prayer.name}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"/>
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+              </svg>
+            </button>
+            <button class="btn-done" onclick="logPrayer(${index})">+1 Done</button>
+          </div>
         `;
         container.appendChild(card);
       });
-
-      // Update Undo Button state and dynamic text
-      const undoBtn = document.getElementById("undoBtn");
-      if (undoBtn) {
-        undoBtn.disabled = history.length === 0;
-        undoBtn.innerText = history.length > 0 
-          ? `Undo (${prayers[history[history.length - 1]].name})` 
-          : "Undo Last";
-      }
     }
 
     function exportData() {
@@ -289,24 +307,22 @@
           const imported = JSON.parse(e.target.result);
           if (Array.isArray(imported)) {
             prayers = imported;
-            history = []; // Reset undo stack on import
             saveData();
             render();
-            alert("Backup restored successfully!");
+            alert("Backup restored!");
           } else {
-            alert("Invalid backup file format.");
+            alert("Invalid backup file.");
           }
         } catch (err) {
-          alert("Error reading backup file.");
+          alert("Error reading file.");
         }
       };
       reader.readAsText(file);
     }
 
     function resetData() {
-      if (confirm("Are you sure you want to reset all counts to default?")) {
+      if (confirm("Reset all counts to default?")) {
         prayers = JSON.parse(JSON.stringify(initialPrayers));
-        history = [];
         saveData();
         render();
       }
