@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Qadha Tracker</title>
   
-  <!-- iOS Web App Settings (Full Screen Mode) -->
+  <!-- iOS Web App Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Qadha">
@@ -28,19 +28,20 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-variant-numeric: tabular-nums; /* Prevents text jump when numbers change */
       -webkit-tap-highlight-color: transparent;
     }
 
     html, body {
       height: 100vh;
       height: 100dvh;
-      overflow: hidden; /* Lock scrolling */
+      overflow: hidden; /* Lock viewport completely */
     }
 
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -49,95 +50,100 @@
 
     header {
       text-align: center;
-      margin-bottom: 4px;
       width: 100%;
-      max-width: 420px;
+      max-width: 480px;
+      padding-bottom: 4px;
     }
 
     h1 {
       font-size: 1.25rem;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.3px;
     }
 
     .subtitle {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
     }
 
     .tracker-list {
       width: 100%;
-      max-width: 420px;
+      max-width: 480px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      flex: 1;
-      justify-content: center;
+      gap: 8px;
+      flex: 1; /* Automatically stretches cards to fit exact screen height */
+      margin: 6px 0;
     }
 
     .card {
       background-color: var(--card-bg);
       border-radius: 12px;
-      padding: 8px 12px;
+      padding: 0 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex: 1; /* Distributes vertical space evenly across 6 cards */
+      min-height: 52px;
     }
 
     .prayer-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .prayer-name {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
-      width: 58px;
+      width: 60px; /* Fixed width prevents shifting */
     }
 
     .prayer-counts {
       display: flex;
       flex-direction: column;
+      min-width: 85px; /* Fixed width prevents shifting */
     }
 
     .prayer-remaining {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--accent);
     }
 
     .prayer-completed {
-      font-size: 0.68rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
     }
 
     .card-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
+    /* iOS-Friendly 44px Target Buttons */
     .btn-undo-icon {
       background-color: rgba(245, 158, 11, 0.12);
       color: var(--warning);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      border-radius: 8px;
-      padding: 7px 9px;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.1s ease, opacity 0.15s ease;
+      transition: transform 0.1s ease, background-color 0.15s ease;
     }
 
     .btn-undo-icon:active {
-      transform: scale(0.9);
+      transform: scale(0.92);
       background-color: rgba(245, 158, 11, 0.25);
     }
 
     .btn-undo-icon:disabled {
-      opacity: 0.25;
+      opacity: 0.2;
       cursor: not-allowed;
       border-color: transparent;
       background-color: transparent;
@@ -148,9 +154,10 @@
       background-color: var(--accent);
       color: #ffffff;
       border: none;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 0.85rem;
+      border-radius: 10px;
+      height: 44px;
+      padding: 0 18px;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: transform 0.1s ease, background-color 0.15s ease;
@@ -162,22 +169,21 @@
     }
 
     .actions {
-      margin-top: 6px;
       width: 100%;
-      max-width: 420px;
+      max-width: 480px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+      gap: 8px;
     }
 
     .btn-secondary {
       background-color: var(--card-bg);
       color: var(--text-muted);
       border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 8px 2px;
-      font-size: 0.72rem;
-      font-weight: 500;
+      border-radius: 10px;
+      height: 40px;
+      font-size: 0.8rem;
+      font-weight: 600;
       cursor: pointer;
       text-align: center;
     }
@@ -200,7 +206,7 @@
   </header>
 
   <div class="tracker-list" id="trackerList">
-    <!-- Dynamic Cards -->
+    <!-- Dynamic Prayer Cards -->
   </div>
 
   <div class="actions">
@@ -274,8 +280,8 @@
             </div>
           </div>
           <div class="card-actions">
-            <button class="btn-undo-icon" onclick="undoPrayer(${index})" ${prayer.completed === 0 ? 'disabled' : ''} title="Undo ${prayer.name}">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <button class="btn-undo-icon" onclick="undoPrayer(${index})" ${prayer.completed === 0 ? 'disabled' : ''} aria-label="Undo ${prayer.name}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7v6h6"/>
                 <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
               </svg>
@@ -287,14 +293,35 @@
       });
     }
 
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(prayers, null, 2));
-      const dlAnchor = document.createElement('a');
-      dlAnchor.setAttribute("href", dataStr);
-      dlAnchor.setAttribute("download", "qadha_backup.json");
-      document.body.appendChild(dlAnchor);
-      dlAnchor.click();
-      dlAnchor.remove();
+    async function exportData() {
+      const jsonStr = JSON.stringify(prayers, null, 2);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `qadha_backup_${dateStr}.json`;
+
+      // Solution 1: Use iOS Native Share Sheet if available (allows overwriting directly in Files app)
+      const file = new File([jsonStr], "qadha_backup.json", { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Qadha Backup'
+          });
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return; // User canceled share
+        }
+      }
+
+      // Solution 2: Fallback download with timestamp to avoid (1) duplicate appending
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function importData(event) {
@@ -309,19 +336,19 @@
             prayers = imported;
             saveData();
             render();
-            alert("Backup restored!");
+            alert("Backup restored successfully!");
           } else {
-            alert("Invalid backup file.");
+            alert("Invalid backup file format.");
           }
         } catch (err) {
-          alert("Error reading file.");
+          alert("Error reading backup file.");
         }
       };
       reader.readAsText(file);
     }
 
     function resetData() {
-      if (confirm("Reset all counts to default?")) {
+      if (confirm("Are you sure you want to reset all counts to default?")) {
         prayers = JSON.parse(JSON.stringify(initialPrayers));
         saveData();
         render();
