@@ -28,20 +28,21 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-variant-numeric: tabular-nums; /* Prevents text jump when numbers change */
+      font-variant-numeric: tabular-nums;
       -webkit-tap-highlight-color: transparent;
     }
 
     html, body {
       height: 100vh;
       height: 100dvh;
-      overflow: hidden; /* Lock viewport completely */
+      overflow: hidden; /* Lock viewport */
     }
 
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      /* Increased bottom padding for iPhone Home Bar clearance */
+      padding: 10px 12px calc(24px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -52,7 +53,7 @@
       text-align: center;
       width: 100%;
       max-width: 480px;
-      padding-bottom: 4px;
+      padding-bottom: 2px;
     }
 
     h1 {
@@ -72,7 +73,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      flex: 1; /* Automatically stretches cards to fit exact screen height */
+      flex: 1;
       margin: 6px 0;
     }
 
@@ -83,8 +84,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex: 1; /* Distributes vertical space evenly across 6 cards */
-      min-height: 52px;
+      flex: 1;
+      min-height: 48px;
     }
 
     .prayer-info {
@@ -96,13 +97,13 @@
     .prayer-name {
       font-size: 1rem;
       font-weight: 600;
-      width: 60px; /* Fixed width prevents shifting */
+      width: 60px;
     }
 
     .prayer-counts {
       display: flex;
       flex-direction: column;
-      min-width: 85px; /* Fixed width prevents shifting */
+      min-width: 85px;
     }
 
     .prayer-remaining {
@@ -174,6 +175,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
+      margin-top: 4px;
     }
 
     .btn-secondary {
@@ -181,11 +183,17 @@
       color: var(--text-muted);
       border: 1px solid #334155;
       border-radius: 10px;
-      height: 40px;
+      height: 44px; /* Increased height for easier tapping */
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       text-align: center;
+      transition: transform 0.1s ease, background-color 0.15s ease;
+    }
+
+    .btn-secondary:active {
+      transform: scale(0.95);
+      background-color: #334155;
     }
 
     .btn-danger {
@@ -227,6 +235,44 @@
     ];
 
     let prayers = [];
+    let audioCtx = null;
+
+    // Synthesize mild tap sound effect
+    function playTapSound() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.035);
+
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.035);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.035);
+      } catch (e) {
+        // Audio fallback handling
+      }
+    }
+
+    // Trigger haptic feedback + sound
+    function triggerFeedback() {
+      playTapSound();
+      if ('vibrate' in navigator) {
+        navigator.vibrate(12); // Subtle vibration
+      }
+    }
 
     function loadData() {
       const saved = localStorage.getItem("qadha_data");
@@ -247,6 +293,7 @@
     }
 
     function logPrayer(index) {
+      triggerFeedback();
       if (prayers[index].remaining > 0) {
         prayers[index].remaining -= 1;
         prayers[index].completed += 1;
@@ -256,6 +303,7 @@
     }
 
     function undoPrayer(index) {
+      triggerFeedback();
       if (prayers[index].completed > 0) {
         prayers[index].remaining += 1;
         prayers[index].completed -= 1;
@@ -294,11 +342,11 @@
     }
 
     async function exportData() {
+      triggerFeedback();
       const jsonStr = JSON.stringify(prayers, null, 2);
       const dateStr = new Date().toISOString().slice(0, 10);
       const filename = `qadha_backup_${dateStr}.json`;
 
-      // Solution 1: Use iOS Native Share Sheet if available (allows overwriting directly in Files app)
       const file = new File([jsonStr], "qadha_backup.json", { type: 'application/json' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -308,11 +356,10 @@
           });
           return;
         } catch (err) {
-          if (err.name === 'AbortError') return; // User canceled share
+          if (err.name === 'AbortError') return;
         }
       }
 
-      // Solution 2: Fallback download with timestamp to avoid (1) duplicate appending
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -325,6 +372,7 @@
     }
 
     function importData(event) {
+      triggerFeedback();
       const file = event.target.files[0];
       if (!file) return;
 
@@ -348,6 +396,7 @@
     }
 
     function resetData() {
+      triggerFeedback();
       if (confirm("Are you sure you want to reset all counts to default?")) {
         prayers = JSON.parse(JSON.stringify(initialPrayers));
         saveData();
