@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Qadha Tracker</title>
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Qadha">
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #10b981;
+      --accent-active: #059669;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-color); color: var(--text); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 480px; }
+    header { text-align: center; margin-bottom: 20px; margin-top: 10px; }
+    h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
+    p.subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; }
+    
+    .prayer-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .prayer-info { display: flex; flex-direction: column; }
+    .prayer-name { font-size: 1.2rem; font-weight: 600; }
+    .prayer-stats { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .prayer-remaining { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 2px; }
+
+    .btn-group { display: flex; gap: 8px; align-items: center; }
+    .tap-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .tap-btn:active { background: var(--accent-active); transform: scale(0.96); }
+    .undo-btn {
+      background: #334155;
+      color: var(--text-muted);
+      border: none;
+      padding: 12px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .tools { margin-top: 20px; display: flex; justify-content: space-between; gap: 8px; }
+    .tool-btn { background: #334155; color: var(--text); border: none; padding: 10px 10px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; flex: 1; text-align: center; }
+    .tool-btn.danger { color: var(--danger); }
+    
+    .log-box { margin-top: 20px; background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 12px; max-height: 120px; overflow-y: auto; font-size: 0.75rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Qadha Tracker</h1>
+      <p class="subtitle">Tap to log completed prayers</p>
+    </header>
+
+    <div id="cards-container"></div>
+
+    <div class="tools">
+      <button class="tool-btn" onclick="exportData()">Backup Data</button>
+      <button class="tool-btn" onclick="document.getElementById('file-input').click()">Restore Data</button>
+      <button class="tool-btn danger" id="reset-btn" onclick="handleReset()">Reset Counts</button>
+    </div>
+
+    <!-- Hidden File Input for Restore -->
+    <input type="file" id="file-input" accept=".json" style="display:none" onchange="importData(event)">
+
+    <div class="log-box" id="log-box">
+      <strong>Activity Log:</strong>
+      <div id="log-entries"></div>
+    </div>
+  </div>
+
+  <script>
+    const INITIAL_DATA = {
+      Fajr: { remaining: 2121, completed: 0 },
+      Dhuhr: { remaining: 2063, completed: 0 },
+      Asr: { remaining: 2063, completed: 0 },
+      Maghrib: { remaining: 709, completed: 0 },
+      Isha: { remaining: 1764, completed: 0 },
+      Witr: { remaining: 1764, completed: 0 }
+    };
+
+    // Safe LocalStorage Wrappers for iOS Local File Restrictions
+    function getStoredItem(key, fallback) {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function setStoredItem(key, val) {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {
+        console.warn("Storage restricted, using session memory");
+      }
+    }
+
+    let data = getStoredItem('qadha_data', JSON.parse(JSON.stringify(INITIAL_DATA)));
+    let history = getStoredItem('qadha_history', []);
+
+    function saveData() {
+      setStoredItem('qadha_data', data);
+      setStoredItem('qadha_history', history);
+      render();
+    }
+
+    function logAction(prayer, type) {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      history.unshift(`${timestamp} - ${type === 'done' ? 'Completed' : 'Undid'} 1 ${prayer}`);
+      if (history.length > 30) history.pop();
+    }
+
+    function completePrayer(prayer) {
+      if (data[prayer].remaining > 0) {
+        data[prayer].remaining -= 1;
+        data[prayer].completed += 1;
+        logAction(prayer, 'done');
+        saveData();
+      }
+    }
+
+    function undoPrayer(prayer) {
+      if (data[prayer].completed > 0) {
+        data[prayer].remaining += 1;
+        data[prayer].completed -= 1;
+        logAction(prayer, 'undo');
+        saveData();
+      }
+    }
+
+    function render() {
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+
+      Object.keys(data).forEach(prayer => {
+        const item = data[prayer];
+        const card = document.createElement('div');
+        card.className = 'prayer-card';
+        card.innerHTML = `
+          <div class="prayer-info">
+            <span class="prayer-name">${prayer}</span>
+            <span class="prayer-remaining">${item.remaining} left</span>
+            <span class="prayer-stats">${item.completed} completed</span>
+          </div>
+          <div class="btn-group">
+            <button class="undo-btn" onclick="undoPrayer('${prayer}')">↩</button>
+            <button class="tap-btn" onclick="completePrayer('${prayer}')">+1 Done</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      const logEntries = document.getElementById('log-entries');
+      logEntries.innerHTML = history.map(h => `<div>${h}</div>`).join('');
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ data, history }));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `qadha_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.data) {
+            data = parsed.data;
+            history = parsed.history || [];
+            saveData();
+            alert("Backup restored successfully!");
+          } else {
+            alert("Invalid backup file structure.");
+          }
+        } catch (err) {
+          alert("Error reading file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    let resetStage = 0;
+    function handleReset() {
+      const btn = document.getElementById('reset-btn');
+      if (resetStage === 0) {
+        resetStage = 1;
+        btn.innerText = "Confirm Reset?";
+        setTimeout(() => {
+          resetStage = 0;
+          btn.innerText = "Reset Counts";
+        }, 3000);
+      } else {
+        data = JSON.parse(JSON.stringify(INITIAL_DATA));
+        history = [];
+        saveData();
+        resetStage = 0;
+        btn.innerText = "Reset Counts";
+      }
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
